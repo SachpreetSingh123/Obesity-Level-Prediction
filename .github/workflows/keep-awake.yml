@@ -2,7 +2,6 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    # Runs every 6 hours
     - cron: '0 */6 * * *'
   workflow_dispatch:
 
@@ -10,16 +9,24 @@ jobs:
   wake-up:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake up Streamlit app with headless Chrome
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright and Chromium
         run: |
-          npm install -g puppeteer
-          node -e '
-            const puppeteer = require("puppeteer");
-            (async () => {
-              const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
-              const page = await browser.newPage();
-              await page.goto("https://obesity-level-prediction-pwnmep.streamlit.app/", { waitUntil: "networkidle2", timeout: 60000 });
-              await new Promise(r => setTimeout(r, 10000));
-              await browser.close();
-            })();
+          pip install playwright
+          playwright install chromium
+
+      - name: Wake up Streamlit app
+        run: |
+          python -c '
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+              page.goto("https://obesity-level-prediction-pwnmep.streamlit.app/", wait_until="networkidle", timeout=60000)
+              page.wait_for_timeout(10000)
+              browser.close()
           '
