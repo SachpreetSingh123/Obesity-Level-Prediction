@@ -1,0 +1,25 @@
+name: Keep Streamlit App Awake
+
+on:
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  wake-up:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up Streamlit app with headless Chrome
+        run: |
+          npm install -g puppeteer
+          node -e '
+            const puppeteer = require("puppeteer");
+            (async () => {
+              const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+              const page = await browser.newPage();
+              await page.goto("https://obesity-level-prediction-pwnmep.streamlit.app/", { waitUntil: "networkidle2", timeout: 60000 });
+              await new Promise(r => setTimeout(r, 10000));
+              await browser.close();
+            })();
+          '
